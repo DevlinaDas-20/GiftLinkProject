@@ -8,7 +8,7 @@ function HomePage() {
     const navigate = useNavigate();
 
     const goToMainPage = ()=>{
-        const authenticationToken = sessionStorage.getItem('authtoken');
+        const authenticationToken = sessionStorage.getItem('auth-token');
         if (!authenticationToken) {
             navigate('/app/login');
         }else{
