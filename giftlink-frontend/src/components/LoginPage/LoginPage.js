@@ -1,11 +1,21 @@
 import React, { useState } from "react";
 import "./LoginPage.css";
+import {urlConfig} from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
 
 function LoginPage() {
   //insert code here to create useState hook variables for email, password
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, seterrorMsg] = useState("");
+
+  const navigate = useNavigate();
+  const NodeURL = urlConfig.backendUrl;
+  const { setIsLoggedIn } = useAppContext();
+
+
 
   // insert code here to create handleLogin function and include console.log
   const validateEmail = (param)=>{
@@ -15,18 +25,40 @@ function LoginPage() {
 
   const handleLogin = async () => {
     console.log("Inside handleLogin");
+    seterrorMsg("");
     if(email === '' || password === ''){
         seterrorMsg('All fields are mandatory')
+    } else if (email && !validateEmail(email)) {
+      seterrorMsg("Enter a valid email for example: sample@sampledomain.com");
+    } else {
+      seterrorMsg("");
+    }
+    if (errorMsg === "") {
+      console.log('NodeURL',NodeURL);
+      const response = await fetch(`${NodeURL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      });
+      console.log('response',response);
+      const json = await response.json();
+      console.log('json data', json);
+      console.log('er', json.error);
+      if (json.authtoken) {
+        sessionStorage.setItem('auth-token', json.authtoken);
+        sessionStorage.setItem('name', json.userName);
+        sessionStorage.setItem('email', json.userEmail);
+        setIsLoggedIn(true);
+        navigate('/app');
       }else{
-        seterrorMsg('')
-        if(email){
-           if(validateEmail(email)){
-              seterrorMsg('')
-           }else{
-              seterrorMsg('Enter a valid email for example: sample@sampledomain.com')
-           }
-        }
+        seterrorMsg(`${json.error}`)
       }
+    }
   };
 
   return (
@@ -47,7 +79,7 @@ function LoginPage() {
                 className="form-control"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {setEmail(e.target.value);seterrorMsg("")}}
               />
             </div>
 
@@ -61,7 +93,7 @@ function LoginPage() {
                 className="form-control"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {setPassword(e.target.value);seterrorMsg("")}}
               />
             </div>
 

@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import {urlConfig} from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 import "./RegisterPage.css";
 
@@ -9,30 +12,60 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, seterrorMsg] = useState("");
-
+  const [showerr, setShowerr] = useState('');
 
   // insert code here to create handleRegister function and include console.log
 
-  const validateEmail = (param)=>{
-   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-   return emailRegex.test(param);
-  }
+  const navigate = useNavigate();
+  const NodeURL = urlConfig.backendUrl;
+  const { setIsLoggedIn } = useAppContext();
+
+  const validateEmail = (param) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(param);
+  };
 
   const handleRegister = async () => {
     console.log("Register invoked");
-    if(firstName === '' || lastName === '' || email === '' || password === ''){
-      seterrorMsg('All fields are mandatory')
-    }else{
-      seterrorMsg('')
-      if(email){
-         if(validateEmail(email)){
-            seterrorMsg('')
-         }else{
-            seterrorMsg('Enter a valid email for example: sample@sampledomain.com')
-         }
+    if(firstName === "" || lastName === "" || email === "" || password === "") {
+        seterrorMsg("All fields are mandatory");
+    } else if (email && !validateEmail(email)) {
+      seterrorMsg("Enter a valid email for example: sample@sampledomain.com");
+    } else {
+      seterrorMsg("");
+    }
+    if (errorMsg === "") {
+      console.log('NodeURL',NodeURL)
+      const response = await fetch(`${NodeURL}/api/auth/register`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: password
+          })
+        });
+        console.log('response',response);
+        const json = await response.json();
+        console.log('json data', json);
+        console.log('er', json.error);
+        if (json.authtoken) {
+          sessionStorage.setItem('auth-token', json.authtoken);
+          sessionStorage.setItem('name', firstName);
+          sessionStorage.setItem('email', json.email);
+          setIsLoggedIn(true);
+          navigate('/app');
       }
+      if (json.error) {
+            setShowerr(json.error);
+        }
     }
   };
+
+
 
   return (
     <div className="container mt-8">
@@ -105,8 +138,14 @@ function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {errorMsg && <p style={{color:'red'}}>{errorMsg}</p>}
-            <button className="btn btn-primary w-100 mb-3" onClick={handleRegister}>Register</button>
+            {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
+            {showerr && <p style={{ color: "red" }}>{showerr}</p>}
+            <button
+              className="btn btn-primary w-100 mb-3"
+              onClick={handleRegister}
+            >
+              Register
+            </button>
 
             {/* insert code here to create a button that performs the `handleRegister` function on click */}
             <p className="mt-4 text-center">
